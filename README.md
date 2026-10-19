@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Integral Check
 
 A static web tool for checking AI-generated closed forms of definite integrals.
@@ -61,3 +62,7 @@ Needs Node 18 or newer. There are no dependencies to install.
 ## Licence
 
 No licence is included. Add one (for example MIT) before others reuse the code.
+=======
+# integral-check
+A browser-based tool for checking AI-generated definite integral solutions
+>>>>>>> 057dfc92db40acc03eb23241f72f6ad1620423b4
