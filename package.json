@@ -1,0 +1,11 @@
+{
+  "name": "integral-check",
+  "version": "1.0.0",
+  "description": "Check AI-generated closed forms for definite integrals against a numerical integral, and tally benchmark accuracy and reasoning grades.",
+  "private": true,
+  "scripts": {
+    "test": "node --test",
+    "serve": "python3 -m http.server -d docs 8000"
+  },
+  "engines": { "node": ">=18" }
+}

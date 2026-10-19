@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Integral Check</title>
+<meta name="description" content="Check an AI's closed form for a definite integral against a numerical integral, then grade the reasoning and tally accuracy across a benchmark.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='32' fill='%23E8A33D'/%3E%3Ctext x='32' y='46' font-size='40' text-anchor='middle' font-family='serif' font-weight='700' fill='%2310252A'%3E%E2%88%AB%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:wght@600;700&display=swap">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="mark" aria-hidden="true">∫</div>
+    <div>
+      <h1>Integral Check</h1>
+      <p class="sub">Check an AI's closed form against a numerical integral, then grade the reasoning and tally accuracy for a benchmark.</p>
+    </div>
+  </header>
+  <nav role="tablist" aria-label="Sections">
+    <button role="tab" id="tab-check" aria-selected="true" data-tab="check">Check an answer</button>
+    <button role="tab" id="tab-benchmark" aria-selected="false" data-tab="benchmark">Benchmark</button>
+    <button role="tab" id="tab-method" aria-selected="false" data-tab="method">Method</button>
+  </nav>
+
+  <section class="panel" id="panel-check">
+    <form class="card" id="check-form">
+      <div class="grid g2">
+        <label>Integrand f(x)<input id="c-f" value="ln(sin x)" autocomplete="off" spellcheck="false"></label>
+        <label>Claimed answer<input id="c-claim" value="-π ln 2 / 2" autocomplete="off" spellcheck="false"></label>
+        <label>Lower bound<input id="c-a" value="0" autocomplete="off" spellcheck="false"></label>
+        <label>Upper bound<input id="c-b" value="π/2" autocomplete="off" spellcheck="false"></label>
+      </div>
+      <div class="row" style="margin-top:14px">
+        <label style="flex-direction:row;align-items:center;gap:8px">Tolerance
+          <select id="c-tol" style="width:auto"><option value="1e-6">1e-6</option><option value="1e-8" selected>1e-8</option><option value="1e-10">1e-10</option></select></label>
+        <button class="btn" type="submit">Check answer</button>
+      </div>
+    </form>
+    <div class="card result" id="check-result" aria-live="polite"></div>
+    <div class="card">
+      <h3>Try an example</h3>
+      <div class="chips" id="chips" style="margin-top:10px"></div>
+    </div>
+    <div class="card">
+      <div class="row" style="justify-content:space-between">
+        <div><h3>Self-test</h3><p class="note">Runs this checker on known integrals, each with one right and one wrong claim.</p></div>
+        <button class="btn ghost small" id="run-self" type="button">Run self-test</button>
+      </div>
+      <div id="self-out" style="margin-top:12px"></div>
+    </div>
+  </section>
+
+  <section class="panel" id="panel-benchmark" hidden>
+    <div class="banner" id="demo-banner" hidden><span><b>Demo data.</b> These answers and grades are made up to show how the summary works. They are not real AI output.</span><button class="btn small" id="clear-demo" type="button">Clear demo answers</button></div>
+    <div class="card">
+      <div class="grid g2">
+        <label>System 1 name<input id="name0" value="System A" autocomplete="off"></label>
+        <label>System 2 name<input id="name1" value="System B" autocomplete="off"></label>
+      </div>
+      <div class="row" style="margin-top:14px">
+        <label style="flex-direction:row;align-items:center;gap:8px">Tolerance
+          <select id="b-tol" style="width:auto"><option value="1e-6">1e-6</option><option value="1e-8" selected>1e-8</option><option value="1e-10">1e-10</option></select></label>
+        <p class="note">Saved in this browser only. Use Copy CSV to keep a record.</p>
+      </div>
+    </div>
+    <div id="summary" class="sysgrid"></div>
+    <div id="problems" class="grid"></div>
+    <div class="row">
+      <button class="btn" id="add-prob" type="button">Add problem</button>
+      <button class="btn ghost" id="copy-csv" type="button">Copy CSV</button>
+      <button class="btn ghost" id="reset-all" type="button">Reset to demo</button>
+    </div>
+    <div id="csv-box" hidden class="card"><p class="note" style="margin-bottom:8px">Copy this text into a spreadsheet.</p><textarea id="csv-text" readonly></textarea></div>
+  </section>
+
+  <section class="panel" id="panel-method" hidden>
+    <div class="card"><h2>What the checker does</h2>
+      <p>It integrates your integrand numerically, evaluates the claimed closed form, and compares the two values. A claim matches when the relative difference is within the tolerance. Any equivalent closed form passes, because values are compared and text is not.</p>
+      <p class="note">The integrator uses tanh-sinh quadrature in double precision, so it resolves about 15 digits. A claim that differs from the true value by less than the numerical error estimate is reported as inconclusive, not as a match.</p></div>
+    <div class="card"><h2>Writing expressions</h2>
+      <ul class="plain">
+        <li>Use <code>x</code> as the variable. Powers can be written <code>x^2</code> or <code>x**2</code>.</li>
+        <li>Functions: <code>sin cos tan asin acos atan sinh cosh tanh exp ln log sqrt abs gamma</code>. <code>log</code> means natural log. Use <code>log10</code> for base 10.</li>
+        <li>Constants: <code>pi</code> (or π), <code>e</code>, <code>catalan</code>. Bounds may be <code>inf</code> or <code>-inf</code>.</li>
+        <li>Implicit multiplication works: <code>x e^x</code>, <code>2pi</code>, <code>sin^2 x</code>, <code>√π/2</code>.</li>
+      </ul></div>
+    <div class="card"><h2>Limits</h2>
+      <ul class="plain">
+        <li>It checks the final value only. Whether the reasoning is valid is your judgement, recorded with the grade menu on the Benchmark tab.</li>
+        <li>Oscillatory integrals that converge only conditionally, such as sin x / x on [0, ∞), are not supported and may return an error or an inconclusive result.</li>
+        <li>Divergent integrals return an error or a very large error estimate.</li>
+        <li>A decimal approximation is not a closed form. If a system gives only a decimal, record it as not answering the question.</li>
+      </ul></div>
+    <div class="card"><h2>Reasoning grades</h2>
+      <div class="scroll"><table><thead><tr><th>Code</th><th>Category</th><th>Rule</th></tr></thead><tbody id="rubric"></tbody></table></div></div>
+  </section>
+</div>
+
+<noscript><p style="padding:16px">Integral Check needs JavaScript to run.</p></noscript>
+<script src="assets/core.js"></script>
+<script src="assets/app.js"></script>
+</body>
+</html>
