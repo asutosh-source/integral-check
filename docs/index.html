@@ -79,11 +79,11 @@
 
   <section class="panel" id="panel-method" hidden>
     <div class="card"><h2>What the checker does</h2>
-      <p>It integrates your integrand numerically, evaluates the claimed closed form, and compares the two values. A claim matches when the relative difference is within the tolerance. Any equivalent closed form passes, because values are compared and text is not.</p>
-      <p class="note">The integrator uses tanh-sinh quadrature in double precision, so it resolves about 15 digits. A claim that differs from the true value by less than the numerical error estimate is reported as inconclusive, not as a match.</p></div>
+      <p>It integrates your integrand numerically, evaluates the claimed closed form, and compares the two values. A result is labelled NUMERICAL MATCH when the computed value agrees within tolerance and the heuristic error estimate is sufficiently small. This is numerical evidence, not a proof of an identity or of the submitted reasoning.</p>
+      <p class="note">The browser integrator uses tanh-sinh quadrature in double precision (typically about 15 significant digits at best). Its refinement-difference error estimate is heuristic, not a rigorous bound. Non-finite interior samples are not silently replaced by zero. The checker uses a few explicit diagnostics and recognized special cases; it is not a general convergence prover.</p></div>
     <div class="card"><h2>Writing expressions</h2>
       <ul class="plain">
-        <li>Use <code>x</code> as the variable. Powers can be written <code>x^2</code> or <code>x**2</code>.</li>
+        <li>Use <code>x</code> as the variable. Powers can be written <code>x^2</code> or <code>x**2</code>. Variables other than x are not supported.</li>
         <li>Functions: <code>sin cos tan asin acos atan sinh cosh tanh exp ln log sqrt abs gamma</code>. <code>log</code> means natural log. Use <code>log10</code> for base 10.</li>
         <li>Constants: <code>pi</code> (or π), <code>e</code>, <code>catalan</code>. Bounds may be <code>inf</code> or <code>-inf</code>.</li>
         <li>Implicit multiplication works: <code>x e^x</code>, <code>2pi</code>, <code>sin^2 x</code>, <code>√π/2</code>.</li>
@@ -91,8 +91,8 @@
     <div class="card"><h2>Limits</h2>
       <ul class="plain">
         <li>It checks the final value only. Whether the reasoning is valid is your judgement, recorded with the grade menu on the Benchmark tab.</li>
-        <li>Oscillatory integrals that converge only conditionally, such as sin x / x on [0, ∞), are not supported and may return an error or an inconclusive result.</li>
-        <li>Divergent integrals return an error or a very large error estimate.</li>
+        <li>The standard Dirichlet integral sin(x)/x on [0, ∞) is recognized as a dedicated identity-based special case. This is not a general-purpose oscillatory quadrature method.</li>
+        <li>A few common non-integrable singularities (including 1/x and 1/x² at zero) receive explicit DIVERGENT diagnostics. Arbitrary convergence and divergence cannot be decided reliably by numerical sampling alone.</li>
         <li>A decimal approximation is not a closed form. If a system gives only a decimal, record it as not answering the question.</li>
       </ul></div>
     <div class="card"><h2>Reasoning grades</h2>

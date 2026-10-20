@@ -1,96 +1,63 @@
 # Integral Check
 
-**A browser-based tool for checking proposed closed-form solutions to definite integrals.**
+A static web tool for checking AI-generated closed forms of definite integrals.
 
-Integral Check is a static website project intended to help users compare a claimed exact value for a definite integral with a numerical evaluation. Its exact capabilities depend on the code in this repository.
+- **Check an answer:** enter an integrand, bounds and a claimed closed form. The page integrates numerically and reports NUMERICAL MATCH, MISMATCH, INCONCLUSIVE, ERROR or selected DIVERGENT diagnostics.
+- **Benchmark:** enter your problems (standard or awkward) and two systems' answers. It checks each answer, lets you record a reasoning grade (A to F), and shows accuracy with 95% Wilson intervals plus the share of correct answers with invalid reasoning. Copy CSV exports the table.
+- **Method:** accepted syntax, limits and the grading rubric.
 
-> **Important:** Numerical agreement is evidence, not a formal proof of an identity. Numerical integration can be unreliable for singular, oscillatory, divergent, or poorly conditioned integrals. Interpret results such as `MATCH`, `MISMATCH`, or `INCONCLUSIVE` according to the implemented validation rules.
+It runs entirely in the browser. There is no server and no build step. Benchmark data is saved in the visitor's own browser (localStorage), so use Copy CSV to keep a record.
 
-## Features
-
-- Runs in a modern web browser.
-- Supports comparison of a definite integral and a claimed result, if implemented by the current interface.
-- Reports a comparison result according to the implemented numerical checks.
-- Includes project tests and supporting tools.
-- Can be published as a static website using GitHub Pages.
-
-## Live website
-
-After deployment, visit:
-
-**https://asutosh-source.github.io/integral-check/**
-
-If the page is unavailable, check the repository's **Actions** tab for deployment errors and confirm that GitHub Pages is enabled.
-
-## Clone the repository
+## Run it locally
 
 ```bash
-git clone https://github.com/asutosh-source/integral-check.git
-cd integral-check
+python3 -m http.server -d docs 8000   # then open http://localhost:8000
 ```
 
-## Run locally
+You can also open `docs/index.html` directly. The page loads fonts from Google Fonts and falls back to system fonts when offline.
 
-If `docs/index.html` exists, try opening it in a modern browser. If browser restrictions prevent some features from working, use a local static HTTP server from the directory configured for the website.
-
-## Run tests
-
-Install [Node.js](https://nodejs.org/) (Node.js 18 or newer is recommended), then run these commands from the project root:
+## Run the tests
 
 ```bash
 npm test
 ```
 
-To see other available npm scripts:
+Needs Node 18 or newer. There are no dependencies to install.
 
-```bash
-npm run
-```
+## Deploy to GitHub Pages
 
-## Deploy with GitHub Pages
+1. Create a new repository on GitHub and push this folder to the `main` branch:
+   ```bash
+   git init -b main
+   git add .
+   git commit -m "Add Integral Check"
+   git remote add origin https://github.com/<your-username>/<your-repo>.git
+   git push -u origin main
+   ```
+2. In the repository, open **Settings → Pages**. Under **Build and deployment**, set **Source** to **GitHub Actions**.
+3. The **Deploy to GitHub Pages** workflow runs on every push to `main`. When it finishes, the site is at `https://<your-username>.github.io/<your-repo>/`. Check the **Actions** tab if it does not appear.
 
-1. Push the project to the `main` branch.
-2. On GitHub, open **Settings → Pages**.
-3. Under **Build and deployment**, set **Source** to **GitHub Actions**.
-4. Open the **Actions** tab and select the Pages deployment workflow.
-5. Wait for the workflow to finish successfully.
-6. Visit `https://asutosh-source.github.io/integral-check/`.
+**Without GitHub Actions:** set **Source** to **Deploy from a branch**, pick `main` and the `/docs` folder, and delete `.github/workflows/pages.yml`.
 
-If no deployment workflow appears, confirm that a workflow file exists under `.github/workflows/` and check which directory it publishes. The workflow and the Pages settings must agree on the publication directory (expected to be `docs` only if the workflow is configured that way).
+## Layout
 
-## Update the website
+| Path | Purpose |
+| --- | --- |
+| `docs/index.html` | The page |
+| `docs/assets/core.js` | Expression parser, numerical integrator, verdict logic, Wilson interval (no dependencies) |
+| `docs/assets/app.js` | Interface and benchmark state |
+| `docs/assets/style.css` | Styles, light and dark |
+| `tests/core.test.js` | Unit tests for `core.js` |
+| `tools/verify_integrals.py` | High-precision (30 digit) checker for research runs. `pip install -r tools/requirements.txt`, then `python tools/verify_integrals.py` |
+| `.github/workflows/` | Tests on every push; deploy on `main` |
 
-After editing the project, commit and push your changes:
+## Limits
 
-```bash
-git add .
-git commit -m "Update Integral Check"
-git push origin main
-```
+- The browser integrator uses tanh-sinh quadrature in double precision, about 15 digits. Use `tools/verify_integrals.py` when you need 30.
+- It checks the final value only. Whether the reasoning is valid is a judgement you record with the grade menu.
+- Conditionally convergent oscillatory integrals, such as sin x / x on [0, infinity), are not supported.
+- A decimal approximation is not a closed form. Record it as not answering the question.
 
-A successful push may trigger a new deployment automatically if the workflow is configured for pushes to `main`.
+## Licence
 
-## Project structure
-
-The repository may contain these directories and files:
-
-- `docs/` — static website files, if configured for publication.
-- `tests/` — automated tests.
-- `tools/` — project utilities.
-- `.github/workflows/` — GitHub Actions workflow configuration.
-- `package.json` — Node.js scripts and project metadata.
-
-## Limitations
-
-- A numerical comparison does not establish a mathematical proof.
-- Accuracy depends on the numerical method, tolerances, domain handling, and the integral being tested.
-- Independently verify results before relying on them in important mathematical or research work.
-- Describe benchmark outputs as simulated or computed results unless they come from independently collected experimental data.
-
-## Contributing
-
-When reporting a problem, include the input, expected behavior, observed result, and any error message. Test improvements, documentation updates, and reproducible examples are welcome.
-
-## License
-
-No license is specified in this README. Unless a license file is added, do not assume the code is available for unrestricted reuse.
+No licence is included. Add one (for example MIT) before others reuse the code.

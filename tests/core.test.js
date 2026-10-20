@@ -21,7 +21,7 @@ const CASES = [
 
 for (const [f, a, b, good, bad] of CASES) {
   test(`integral of ${f} on [${a}, ${b}]`, () => {
-    assert.equal(checkClaim(f, a, b, good, 1e-8).verdict, 'MATCH');
+    assert.equal(checkClaim(f, a, b, good, 1e-8).verdict, 'NUMERICAL_MATCH');
     assert.equal(checkClaim(f, a, b, bad, 1e-8).verdict, 'MISMATCH');
   });
 }
@@ -54,4 +54,26 @@ test('divergent integral is not reported as a match', () => {
 test('Wilson interval for 12 of 15', () => {
   const [lo, hi] = wilson(12, 15);
   assert.ok(Math.abs(lo - 0.548) < 0.002 && Math.abs(hi - 0.930) < 0.002);
+});
+
+
+test('known non-integrable endpoint singularities are explicitly diagnosed', () => {
+  assert.equal(checkClaim('1/x','0','1','100',1e-8).verdict, 'DIVERGENT');
+  assert.equal(checkClaim('1/x^2','0','1','100',1e-8).verdict, 'DIVERGENT');
+});
+
+test('interior absolute-value singularity is split into subintervals', () => {
+  const r=checkClaim('1/sqrt(abs(x))','-1','1','4',1e-6);
+  assert.ok(Math.abs(r.value-4)<1e-4, `got ${r.value}`);
+});
+
+test('absolute-value kink at a nonzero point is split', () => {
+  const r=checkClaim('abs(x-0.3)','0','1','0.29',1e-8);
+  assert.ok(Math.abs(r.value-0.29)<1e-8, `got ${r.value}`);
+});
+
+test('Dirichlet integral recognized with explicit method note', () => {
+  const r=checkClaim('sin(x)/x','0','inf','pi/2',1e-8);
+  assert.equal(r.verdict,'NUMERICAL_MATCH');
+  assert.match(r.method,/recognized Dirichlet/);
 });

@@ -1,7 +1,9 @@
 """Integral-answer verification harness.
 Numerically integrates each problem to 30 digits (mpmath) and compares a claimed
 closed form. Verifies the FINAL ANSWER only; reasoning validity needs a manual rubric."""
-from mpmath import mp, mpf, quad, quadosc, pi, e, log, sqrt, sin, exp, inf, ln, zeta, mpmathify
+import ast
+import operator as op
+from mpmath import mp, mpf, quad, quadosc, pi, e, log, sqrt, sin, exp, inf, ln, zeta, erf, beta, gamma, cos, tan, mpmathify
 mp.dps = 30
 NS = dict(pi=pi, e=e, log=log, ln=ln, sqrt=sqrt, zeta=zeta)
 

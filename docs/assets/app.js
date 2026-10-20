@@ -14,14 +14,15 @@ function showTab(name){
 document.querySelectorAll('nav button').forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
 
 /* check tab */
-function pill(v){ return '<span class="pill '+(v||'none')+'">'+(v||'—')+'</span>'; }
+function pill(v){ const label=v==='NUMERICAL_MATCH'?'NUMERICAL MATCH':v; const cls=v==='NUMERICAL_MATCH'?'MATCH':v; return '<span class="pill '+(cls||'none')+'">'+(label||'—')+'</span>'; }
 function runCheck(){
   const out = $('check-result');
   try {
     const r = checkClaim($('c-f').value, $('c-a').value, $('c-b').value, $('c-claim').value, parseFloat($('c-tol').value));
-    const msg = r.verdict === 'INCONCLUSIVE' ? 'The difference is smaller than the numerical error, so this cannot be called a match or a mismatch.' : r.verdict === 'ERROR' ? 'The integral or the claim did not give a finite number. The integral may diverge.' : r.verdict === 'MATCH' ? 'The claimed value agrees with the numerical integral within the tolerance. This does not show the reasoning was valid.' : 'The claimed value differs from the numerical integral.';
+    const msg = r.verdict === 'INCONCLUSIVE' ? 'The difference is smaller than the numerical error, so this cannot be called a match or a mismatch.' : r.verdict === 'DIVERGENT' ? 'A known non-integrable singularity was detected. This is a diagnostic, not a general divergence proof.' : r.verdict === 'ERROR' ? 'The integrand or claim could not be evaluated safely. Check for singularities or domain errors.' : r.verdict === 'NUMERICAL_MATCH' ? 'The claimed value agrees numerically within tolerance. This is not a proof of an identity or of valid reasoning.' : 'The claimed value differs from the numerical integral.';
     out.innerHTML = '<div class="row">'+pill(r.verdict)+'<span class="note">'+esc(msg)+'</span></div>'+
-      '<dl><div><dt>Numerical integral</dt><dd>'+fmt(r.value)+'</dd></div><div><dt>Estimated numerical error</dt><dd>'+r.err.toExponential(1)+'</dd></div>'+
+      '<p class="note"><b>Method:</b> '+esc(r.method||'numerical integration')+'. '+esc(r.diagnostics||'')+'</p>'+
+      '<dl><div><dt>Numerical integral</dt><dd>'+fmt(r.value)+'</dd></div><div><dt>Estimated numerical error (heuristic)</dt><dd>'+Number(r.err).toExponential(1)+'</dd></div>'+
       '<div><dt>Claimed value</dt><dd>'+fmt(r.claim)+'</dd></div><div><dt>Relative difference</dt><dd>'+r.rel.toExponential(2)+'</dd></div></dl>';
   } catch(e) { out.innerHTML = '<div class="row">'+pill('ERROR')+'<span>'+esc(e.message)+'</span></div><p class="note">Check the syntax. The Method tab lists what is accepted.</p>'; }
 }
@@ -35,7 +36,7 @@ const SELF = [['x e^x','0','1','1','e-1'],['sin(x)^2','0','pi','pi/2','pi'],['ln
   ['1/(1+x^2)','-inf','inf','pi','pi/2'],['x^2 exp(-x)','0','inf','gamma(3)','gamma(2)'],['sin^2 x','0','pi','π/2','π'],['1/sqrt(x)','0','1','2','1']];
 $('run-self').addEventListener('click', () => {
   let ok = 0, rows = '';
-  for (const [f,a,b,g,w] of SELF) { const r1 = checkClaim(f,a,b,g,1e-8), r2 = checkClaim(f,a,b,w,1e-8); ok += (r1.verdict==='MATCH') + (r2.verdict==='MISMATCH');
+  for (const [f,a,b,g,w] of SELF) { const r1 = checkClaim(f,a,b,g,1e-8), r2 = checkClaim(f,a,b,w,1e-8); ok += (r1.verdict==='NUMERICAL_MATCH') + (r2.verdict==='MISMATCH');
     rows += '<tr><td class="num">'+esc(f)+'</td><td class="num">['+esc(a)+', '+esc(b)+']</td><td class="num">'+fmt(r1.value)+'</td><td>'+esc(g)+' '+pill(r1.verdict)+'</td><td>'+esc(w)+' '+pill(r2.verdict)+'</td></tr>'; }
   $('self-out').innerHTML = '<p><b>'+ok+' of '+SELF.length*2+'</b> verdicts as expected (right claim should match, wrong claim should not).</p><div class="scroll"><table><thead><tr><th>Integrand</th><th>Bounds</th><th>Numerical value</th><th>Right claim</th><th>Wrong claim</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
 });
@@ -57,7 +58,7 @@ function save(){ try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e) 
 const numCache = new Map();
 function numeric(p){
   const key = p.f+'|'+p.a+'|'+p.b; if (numCache.has(key)) return numCache.get(key);
-  let res; if (!p.f.trim()) res = {empty:true}; else { try { res = integrate(compileF(p.f), evalConst(p.a), evalConst(p.b)); } catch(e) { res = {error:e.message}; } }
+  let res; if (!p.f.trim()) res = {empty:true}; else { try { res = integrateExpression(p.f, compileF(p.f), evalConst(p.a), evalConst(p.b)); } catch(e) { res = {error:e.message}; } }
   numCache.set(key, res); return res;
 }
 function evaluate(p, s){
@@ -73,9 +74,9 @@ function renderSummary(){
   let html = '';
   for (let s = 0; s < 2; s++) {
     const ev = S.problems.map(p => ({p, e:evaluate(p, s), g:p.grades[s]}));
-    const half = h => { const rows = ev.filter(x => x.p.half === h && x.e.verdict); return [rows.filter(x => x.e.verdict === 'MATCH').length, rows.length]; };
+    const half = h => { const rows = ev.filter(x => x.p.half === h && x.e.verdict); return [rows.filter(x => x.e.verdict === 'NUMERICAL_MATCH').length, rows.length]; };
     const [ks,ns] = half('standard'), [ka,na] = half('awkward'), kt = ks+ka, nt = ns+na;
-    const matched = ev.filter(x => x.e.verdict === 'MATCH' && x.g); const bN = matched.filter(x => x.g === 'B').length;
+    const matched = ev.filter(x => x.e.verdict === 'NUMERICAL_MATCH' && x.g); const bN = matched.filter(x => x.g === 'B').length;
     const counts = 'ABCDEF'.split('').map(c => '<span class="cat">'+c+' <b>'+ev.filter(x => x.g === c).length+'</b></span>').join('');
     html += '<div class="card"><h2>'+esc(S.names[s] || 'System '+(s+1))+'</h2><div class="scroll"><table><thead><tr><th>Half</th><th>Correct</th><th>Accuracy (95% interval)</th><th style="width:34%">Interval</th></tr></thead><tbody>'+
       '<tr><td>Standard</td>'+stat(ks,ns)+'</tr><tr><td>Awkward</td>'+stat(ka,na)+'</tr><tr><td>All</td>'+stat(kt,nt)+'</tr></tbody></table></div>'+
@@ -95,7 +96,8 @@ function refreshCard(p){
     box.querySelector('.vp').innerHTML = pill(e.verdict);
     const g = p.grades[s]; let w = '';
     if (e.verdict === 'MISMATCH' && (g === 'A' || g === 'B')) w = 'Grade '+g+' needs a matching answer.';
-    else if (e.verdict === 'MATCH' && ['C','D','E','F'].includes(g)) w = 'Grade '+g+' does not fit a matching answer. Use A or B.';
+    else if (e.verdict === 'DIVERGENT') w = 'A recognized non-integrable singularity was detected; confirm independently for unusual expressions.';
+    else if (e.verdict === 'NUMERICAL_MATCH' && ['C','D','E','F'].includes(g)) w = 'Grade '+g+' does not fit a matching answer. Use A or B.';
     else if (e.note) w = e.note;
     box.querySelector('.warn').textContent = w;
   }
